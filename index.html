@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ravindo Learning System (RLS)</title>
+  <style>
+    /* === GLOBAL STYLES === */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    :root {
+      --primary: #0d3b66;
+      --secondary: #1a5f9e;
+      --accent: #f4d35e;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --gray: #6c757d;
+      --success: #28a745;
+    }
+
+    body {
+      background-color: #f0f4f8;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      opacity: 0.9;
+    }
+
+    .tagline {
+      font-style: italic;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* === BUTTON GRID === */
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .btn {
+      background-color: var(--accent);
+      color: var(--primary);
+      border: none;
+      padding: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    /* === MODAL STYLES === */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      overflow-y: auto;
+      padding: 2rem 1rem;
+    }
+
+    .modal-content {
+      background: white;
+      max-width: 900px;
+      margin: 2rem auto;
+      border-radius: 12px;
+      padding: 2rem;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--gray);
+    }
+
+    .modal h2 {
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .gallery-item {
+      cursor: pointer;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .gallery-item:hover {
+      border-color: var(--secondary);
+      transform: scale(1.03);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .diagram-container {
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+
+    .diagram-container img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin: 0 auto;
+    }
+
+    .video-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .video-container iframe {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 8px;
+    }
+
+    ol, ul {
+      padding-left: 1.5rem;
+      margin: 1rem 0;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    /* === FOOTER === */
+    footer {
+      background: var(--primary);
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      margin-top: 3rem;
+      font-size: 0.95rem;
+    }
+
+    /* === IMAGE MODAL === */
+    .image-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 2000;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .image-modal-content {
+      max-width: 90%;
+      max-height: 80%;
+    }
+
+    .image-modal-content img {
+      max-width: 100%;
+      max-height: 70vh;
+      border: 2px solid white;
+      border-radius: 8px;
+    }
+
+    .image-caption {
+      color: white;
+      margin-top: 1rem;
+      text-align: center;
+      max-width: 800px;
+    }
+
+    .image-source {
+      color: var(--accent);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
+    /* === QUIZ STYLES === */
+    .quiz-question {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .quiz-option {
+      padding: 0.75rem;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quiz-option:hover {
+      background: #e9ecef;
+    }
+
+    .quiz-option.selected {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .quiz-submit {
+      background: var(--success);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+
+    .quiz-result {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--light);
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      .subtitle { font-size: 1.2rem; }
+      .tagline { font-size: 1rem; }
+      .btn { padding: 0.8rem; font-size: 0.95rem; }
+      .modal-content { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container">
+      <h1>Ravindo Learning System (RLS)</h1>
+      <div class="subtitle">Lab Workshop Pneumatic, Sensor & Automation</div>
+      <div class="tagline">“Kontrol kapal dimulai dari sinyal, bukan dari tenaga.”</div>
+    </div>
+  </header>
+
+  <!-- MAIN BUTTONS -->
+  <div class="container">
+    <div class="button-grid">
+      <button class="btn" onclick="openModal('pneumatic')">Pneumatic System</button>
+      <button class="btn" onclick="openModal('sensor')">Sensor System</button>
+      <button class="btn" onclick="openModal('automation')">Automation & Control</button>
+      <button class="btn" onclick="openModal('safety')">Safety</button>
+      <button class="btn" onclick="openModal('quiz')">Quiz Cepat</button>
+      <button class="btn" onclick="openModal('praktikum')">Mode Praktikum</button>
+      <button class="btn" onclick="openModal('motorStarter')">Motor Starter</button>
+    </div>
+  </div>
+
+  <!-- PNEUMATIC MODAL -->
+  <div id="pneumatic" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('pneumatic')">&times;</button>
+      <h2>Sistem Pneumatik di Kapal</h2>
+
+      <div class="section">
+        <h3>0. Alur Sistem Terintegrasi di Kapal</h3>
+        <p>Push Button / Sensor →<br>
+          Power Supply 24VDC →<br>
+          Solenoid Valve →<br>
+          Pneumatic Actuator →<br>
+          Gerakan Mekanis</p>
+        <p><em>Semua sistem otomasi kapal dimulai dari sinyal listrik!</em></p>
+      </div>
+
+      <div class="section">
+        <h3>A. Gambaran Umum</h3>
+        <p><strong>Apa itu sistem pneumatik?</strong> Sistem yang menggunakan udara bertekanan untuk menggerakkan aktuator (silinder, motor).</p>
+        <p><strong>Mengapa digunakan di kapal?</strong> Aman (tidak percikan api), tahan korosi, ringan, dan mudah dikendalikan.</p>
+        <p><strong>Perbedaan dengan hidrolik:</strong> Pneumatik pakai udara (kompresibel), hidrolik pakai oli (tidak kompresibel). Pneumatik lebih aman di area berisiko ledakan.</p>
+      </div>
+
+      <div class="section">
+        <h3>B. Komponen Utama</h3>
+        <div class="gallery">
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Air_compressor.jpg/800px-Air_compressor.jpg', 'Kompresor Udara', 'Menghasilkan udara bertekanan untuk sistem pneumatik.', 'https://commons.wikimedia.org/wiki/File:Air_compressor.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Air_compressor.jpg/300px-Air_compressor.jpg" alt="Kompresor Udara">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Air_receiver_tank.jpg/800px-Air_receiver_tank.jpg', 'Tangki Penampung Udara', 'Menyimpan udara bertekanan dan menstabilkan tekanan sistem.', 'https://commons.wikimedia.org/wiki/File:Air_receiver_tank.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Air_receiver_tank.jpg/300px-Air_receiver_tank.jpg" alt="Tangki Penampung">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/FRL_unit.jpg/800px-FRL_unit.jpg', 'Unit FRL (Filter-Regulator-Lubricator)', 'Membersihkan, mengatur tekanan, dan melumasi udara sebelum ke aktuator.', 'https://commons.wikimedia.org/wiki/File:FRL_unit.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/FRL_unit.jpg/300px-FRL_unit.jpg" alt="FRL Unit">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Pressure_gauge.jpg/800px-Pressure_gauge.jpg', 'Pressure Gauge', 'Menunjukkan tekanan udara dalam sistem.', 'https://commons.wikimedia.org/wiki/File:Pressure_gauge.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Pressure_gauge.jpg/300px-Pressure_gauge.jpg" alt="Pressure Gauge">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/800px-Solenoid_valve.jpg', 'Solenoid Valve', 'Katup elektromagnetik yang mengontrol aliran udara berdasarkan sinyal listrik. Tegangan kontrol umum: 24VDC. Beberapa sistem lama: 220VAC. Kontrol berasal dari panel listrik / PLC / relay.', 'https://commons.wikimedia.org/wiki/File:Solenoid_valve.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/300px-Solenoid_valve.jpg" alt="Solenoid Valve">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Directional_control_valve.jpg/800px-Directional_control_valve.jpg', 'Directional Control Valve', 'Mengarahkan aliran udara ke silinder untuk gerakan maju/mundur.', 'https://commons.wikimedia.org/wiki/File:Directional_control_valve.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Directional_control_valve.jpg/300px-Directional_control_valve.jpg" alt="Directional Control Valve">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Pneumatic_cylinder.jpg/800px-Pneumatic_cylinder.jpg', 'Silinder Pneumatik', 'Mengubah energi udara menjadi gerakan linear (maju/mundur).', 'https://commons.wikimedia.org/wiki/File:Pneumatic_cylinder.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Pneumatic_cylinder.jpg/300px-Pneumatic_cylinder.jpg" alt="Silinder Pneumatik">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>C. Diagram Alir Sistem</h3>
+        <div class="diagram-container">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Pneumatic_system_diagram.svg/800px-Pneumatic_system_diagram.svg.png" alt="Diagram Alir Sistem Pneumatik">
+          <p><em>Sumber: Wikimedia Commons</em></p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>D. Prinsip Kerja (Langkah demi Langkah)</h3>
+        <ol>
+          <li>Tombol ditekan → sinyal listrik ON</li>
+          <li>Kompresor menyala → mengisi tangki udara</li>
+          <li>Tekanan udara tersimpan di tangki</li>
+          <li>Solenoid valve aktif → membuka aliran udara</li>
+          <li>Udara masuk ke silinder → piston bergerak</li>
+          <li>Udara bekas keluar melalui exhaust</li>
+        </ol>
+        <p><strong>Catatan:</strong> Tegangan kontrol umum: 24VDC. Beberapa sistem lama: 220VAC. Kontrol berasal dari panel listrik / PLC / relay.</p>
+      </div>
+
+      <div class="section">
+        <h3>E. Aplikasi di Kapal</h3>
+        <ul>
+          <li>Katup kontrol bahan bakar</li>
+          <li>Pintu otomatis engine room</li>
+          <li>Aktuator untuk sistem pemadam kebakaran</li>
+          <li>Alat bantu mesin utama</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>F. Video Pembelajaran</h3>
+        <div class="video-container">
+          <iframe src="https://www.youtube.com/embed/Hn3k9cKZxXU" title="Pneumatic Basics" allowfullscreen></iframe>
+          <iframe src="https://www.youtube.com/embed/2bYz7XHqf5Q" title="Marine Pneumatics" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SENSOR MODAL -->
+  <div id="sensor" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('sensor')">&times;</button>
+      <h2>Sistem Sensor di Kapal</h2>
+
+      <div class="section">
+        <h3>A. Konsep Sensor</h3>
+        <p>Sensor adalah "indra" sistem kontrol. Mengubah kondisi fisik (tekanan, suhu, posisi) menjadi sinyal listrik.</p>
+        <p><strong>Analog:</strong> Output kontinu (misal: 4–20 mA untuk tekanan).</p>
+        <p><strong>Digital:</strong> Output ON/OFF (misal: proximity switch).</p>
+      </div>
+
+      <div class="section">
+        <h3>B. Jenis-Jenis Sensor</h3>
+        <div class="gallery">
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Inductive_proximity_sensor.jpg/800px-Inductive_proximity_sensor.jpg', 'Proximity Sensor (Induktif)', 'Mendeteksi logam tanpa kontak. Output: 24VDC digital.', 'https://commons.wikimedia.org/wiki/File:Inductive_proximity_sensor.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Inductive_proximity_sensor.jpg/300px-Inductive_proximity_sensor.jpg" alt="Proximity Sensor">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Pressure_transmitter.jpg/800px-Pressure_transmitter.jpg', 'Pressure Sensor', 'Mengukur tekanan fluida. Output: 4–20 mA analog.', 'https://commons.wikimedia.org/wiki/File:Pressure_transmitter.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Pressure_transmitter.jpg/300px-Pressure_transmitter.jpg" alt="Pressure Sensor">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Thermocouple.jpg/800px-Thermocouple.jpg', 'Temperature Sensor (Thermocouple)', 'Mengukur suhu mesin/pipa. Output: mV atau 4–20 mA.', 'https://commons.wikimedia.org/wiki/File:Thermocouple.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Thermocouple.jpg/300px-Thermocouple.jpg" alt="Thermocouple">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Level_sensor.jpg/800px-Level_sensor.jpg', 'Level Sensor', 'Mendeteksi ketinggian cairan di tangki.', 'https://commons.wikimedia.org/wiki/File:Level_sensor.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Level_sensor.jpg/300px-Level_sensor.jpg" alt="Level Sensor">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Limit_switch.jpg/800px-Limit_switch.jpg', 'Limit Switch', 'Saklar mekanis untuk deteksi posisi akhir.', 'https://commons.wikimedia.org/wiki/File:Limit_switch.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Limit_switch.jpg/300px-Limit_switch.jpg" alt="Limit Switch">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>C. Diagram Alir Sinyal</h3>
+        <div class="diagram-container">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Sensor_to_controller_signal_flow.png/800px-Sensor_to_controller_signal_flow.png" alt="Alur Sinyal Sensor ke Kontroler">
+          <p><em>Sumber: Wikimedia Commons</em></p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>D. Tegangan & Sinyal</h3>
+        <ul>
+          <li><strong>Tegangan kontrol:</strong> 24VDC (standar industri maritim)</li>
+          <li><strong>Sinyal analog:</strong> 4–20 mA (lebih tahan noise daripada 0–10V)</li>
+          <li><strong>Sinyal digital:</strong> ON = 24V, OFF = 0V</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTOMATION MODAL -->
+  <div id="automation" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('automation')">&times;</button>
+      <h2>Sistem Otomasi & Kontrol</h2>
+
+      <div class="section">
+        <h3>A. Gambaran Umum</h3>
+        <p>Sistem kontrol otomatis bekerja dalam 3 tahap:<br>
+          <strong>INPUT</strong> (sensor) → <strong>PROSES</strong> (PLC/logika) → <strong>OUTPUT</strong> (aktuator)</p>
+      </div>
+
+      <div class="section">
+        <h3>B. Komponen Kontrol</h3>
+        <div class="gallery">
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/24V_DC_power_supply.jpg/800px-24V_DC_power_supply.jpg', 'Power Supply 24VDC', 'Sumber daya untuk seluruh sistem kontrol.', 'https://commons.wikimedia.org/wiki/File:24V_DC_power_supply.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/24V_DC_power_supply.jpg/300px-24V_DC_power_supply.jpg" alt="Power Supply">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Relay_module.jpg/800px-Relay_module.jpg', 'Relay', 'Saklar elektromagnetik untuk mengontrol beban besar dengan sinyal kecil.', 'https://commons.wikimedia.org/wiki/File:Relay_module.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Relay_module.jpg/300px-Relay_module.jpg" alt="Relay">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/PLC_Siemens_S7-1200.jpg/800px-PLC_Siemens_S7-1200.jpg', 'PLC (Programmable Logic Controller)', 'Otak sistem otomasi. Menjalankan logika berdasarkan input.', 'https://commons.wikimedia.org/wiki/File:PLC_Siemens_S7-1200.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/PLC_Siemens_S7-1200.jpg/300px-PLC_Siemens_S7-1200.jpg" alt="PLC">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/800px-Contactor_electric.jpg', 'Contactor', 'Relay berdaya tinggi untuk mengontrol motor/pompa.', 'https://commons.wikimedia.org/wiki/File:Contactor_electric.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/300px-Contactor_electric.jpg" alt="Contactor">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/800px-Solenoid_valve.jpg', 'Solenoid Valve', 'Katup pneumatik/hidrolik yang dikontrol listrik.', 'https://commons.wikimedia.org/wiki/File:Solenoid_valve.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/300px-Solenoid_valve.jpg" alt="Solenoid Valve">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Indicator_lamp.jpg/800px-Indicator_lamp.jpg', 'Lampu Indikator', 'Memberi status visual (ON/OFF/Alarm).', 'https://commons.wikimedia.org/wiki/File:Indicator_lamp.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Indicator_lamp.jpg/300px-Indicator_lamp.jpg" alt="Indicator Lamp">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>C. Diagram Sistem Otomasi</h3>
+        <div class="diagram-container">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Automation_system_schematic.svg/800px-Automation_system_schematic.svg.png" alt="Skema Sistem Otomasi">
+          <p><em>Sumber: Wikimedia Commons</em></p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>D. Contoh Urutan Kerja</h3>
+        <ol>
+          <li>Pressure sensor mendeteksi tekanan rendah</li>
+          <li>Sinyal dikirim ke PLC</li>
+          <li>PLC menjalankan logika: "Jika tekanan < 2 bar, nyalakan pompa"</li>
+          <li>PLC mengaktifkan relay</li>
+          <li>Relay menghidupkan contactor</li>
+          <li>Pompa menyala → tekanan naik</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h3>E. Aplikasi di Kapal</h3>
+        <ul>
+          <li>Alarm bilga (deteksi air di ruang mesin)</li>
+          <li>Kontrol pompa ballast otomatis</li>
+          <li>Monitoring suhu bearing mesin utama</li>
+          <li>Sistem pendingin otomatis</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>F. Video Pembelajaran</h3>
+        <div class="video-container">
+          <iframe src="https://www.youtube.com/embed/YJZsKZ0FqU8" title="PLC Basics for Marine" allowfullscreen></iframe>
+          <iframe src="https://www.youtube.com/embed/3oT8p8KzF5U" title="Marine Automation Systems" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAFETY MODAL -->
+  <div id="safety" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('safety')">&times;</button>
+      <h2>Keselamatan Kerja</h2>
+
+      <div class="section">
+        <h3>A. Lock Out Tag Out (LOTO)</h3>
+        <p>Prosedur wajib sebelum servis sistem:<br>
+          Matikan sumber energi → Kunci dengan gembok → Pasang label peringatan</p>
+        <div class="diagram-container">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Lockout_tagout_example.jpg/800px-Lockout_tagout_example.jpg" alt="Contoh LOTO">
+          <p><em>Sumber: Wikimedia Commons</em></p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>B. Bahaya Tekanan Udara</h3>
+        <p>Jangan pernah lepas fitting saat sistem bertekanan! Udara bertekanan bisa meledakkan partikel logam.</p>
+      </div>
+
+      <div class="section">
+        <h3>C. Keselamatan Listrik</h3>
+        <p>Gunakan multimeter untuk pastikan tidak ada tegangan sebelum sentuh kabel. Selalu pakai sarung tangan isolasi.</p>
+      </div>
+
+      <div class="section">
+        <h3>D. Alat Pelindung Diri (APD)</h3>
+        <div class="gallery">
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Safety_glasses.jpg/800px-Safety_glasses.jpg', 'Kacamata Pengaman', 'Melindungi mata dari partikel logam/debu.', 'https://commons.wikimedia.org/wiki/File:Safety_glasses.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Safety_glasses.jpg/300px-Safety_glasses.jpg" alt="Kacamata Pengaman">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Safety_gloves.jpg/800px-Safety_gloves.jpg', 'Sarung Tangan', 'Isolasi listrik dan perlindungan mekanis.', 'https://commons.wikimedia.org/wiki/File:Safety_gloves.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Safety_gloves.jpg/300px-Safety_gloves.jpg" alt="Sarung Tangan">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Hard_hat.jpg/800px-Hard_hat.jpg', 'Helm Pengaman', 'Wajib di area engine room.', 'https://commons.wikimedia.org/wiki/File:Hard_hat.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Hard_hat.jpg/300px-Hard_hat.jpg" alt="Helm Pengaman">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ MODAL -->
+  <div id="quiz" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('quiz')">&times;</button>
+      <h2>Quiz Cepat</h2>
+      <p>Pilih jawaban terbaik untuk setiap pertanyaan.</p>
+
+      <div class="quiz-question">
+        <p>1. Apa fungsi utama FRL dalam sistem pneumatik?</p>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="selectOption(this, 'A1')">A. Menghasilkan udara bertekanan</div>
+          <div class="quiz-option" onclick="selectOption(this, 'B1')">B. Menyaring, mengatur tekanan, dan melumasi udara</div>
+          <div class="quiz-option" onclick="selectOption(this, 'C1')">C. Mengubah udara menjadi gerakan linear</div>
+          <div class="quiz-option" onclick="selectOption(this, 'D1')">D. Menyimpan udara bertekanan</div>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <p>2. Sensor tekanan di kapal biasanya menghasilkan sinyal...</p>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="selectOption(this, 'A2')">A. 0–10V</div>
+          <div class="quiz-option" onclick="selectOption(this, 'B2')">B. 4–20 mA</div>
+          <div class="quiz-option" onclick="selectOption(this, 'C2')">C. 24VDC ON/OFF</div>
+          <div class="quiz-option" onclick="selectOption(this, 'D2')">D. Sinyal nirkabel</div>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <p>3. Komponen yang berfungsi sebagai "otak" sistem otomasi adalah...</p>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="selectOption(this, 'A3')">A. Relay</div>
+          <div class="quiz-option" onclick="selectOption(this, 'B3')">B. Solenoid valve</div>
+          <div class="quiz-option" onclick="selectOption(this, 'C3')">C. PLC</div>
+          <div class="quiz-option" onclick="selectOption(this, 'D3')">D. Power supply</div>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <p>4. Prosedur LOTO bertujuan untuk...</p>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="selectOption(this, 'A4')">A. Meningkatkan efisiensi kerja</div>
+          <div class="quiz-option" onclick="selectOption(this, 'B4')">B. Memastikan sistem benar-benar mati sebelum diservis</div>
+          <div class="quiz-option" onclick="selectOption(this, 'C4')">C. Menghemat energi</div>
+          <div class="quiz-option" onclick="selectOption(this, 'D4')">D. Mempercepat proses perbaikan</div>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <p>5. Mengapa sistem pneumatik lebih aman daripada hidrolik di area berisiko ledakan?</p>
+        <div class="quiz-options">
+          <div class="quiz-option" onclick="selectOption(this, 'A5')">A. Lebih murah</div>
+          <div class="quiz-option" onclick="selectOption(this, 'B5')">B. Tidak menggunakan cairan yang mudah terbakar</div>
+          <div class="quiz-option" onclick="selectOption(this, 'C5')">C. Lebih kuat</div>
+          <div class="quiz-option" onclick="selectOption(this, 'D5')">D. Lebih cepat responsnya</div>
+        </div>
+      </div>
+
+      <button class="quiz-submit" onclick="submitQuiz()">Submit Jawaban</button>
+      <div class="quiz-result" id="quizResult"></div>
+    </div>
+  </div>
+
+  <!-- PRAKTIKUM MODAL -->
+  <div id="praktikum" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('praktikum')">&times;</button>
+      <h2>Mode Praktikum</h2>
+
+      <div class="section">
+        <h3>A. Alat yang Disiapkan</h3>
+        <ul>
+          <li>Power supply 24VDC</li>
+          <li>Multimeter</li>
+          <li>Solenoid valve</li>
+          <li>Selang pneumatik</li>
+          <li>Silinder pneumatik</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>B. Langkah Praktikum</h3>
+        <ol>
+          <li>Cek tegangan supply</li>
+          <li>Aktifkan solenoid</li>
+          <li>Amati gerakan silinder</li>
+          <li>Matikan sistem</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h3>C. Kesalahan Umum Taruna</h3>
+        <ul>
+          <li>Salah pasang IN / OUT valve</li>
+          <li>Salah polaritas solenoid DC</li>
+          <li>Tekanan terlalu tinggi</li>
+          <li>Lupa exhaust</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>D. Safety Point</h3>
+        <ul>
+          <li>Pastikan tekanan nol sebelum bongkar</li>
+          <li>Gunakan APD</li>
+          <li>Ikuti prosedur LOTO</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOTOR STARTER MODAL -->
+  <div id="motorStarter" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal('motorStarter')">&times;</button>
+      <h2>Sistem Starter Motor Listrik di Kapal</h2>
+
+      <div class="section">
+        <h3>1. Gambaran Umum</h3>
+        <p>Starter motor adalah sistem pengasutan motor listrik agar arus & torsi aman.</p>
+        <p>Digunakan pada pompa, blower, compressor, conveyor kapal.</p>
+        <p><strong>"Starter adalah jembatan antara sistem listrik dan sistem mekanik."</strong></p>
+      </div>
+
+      <div class="section">
+        <h3>2. Jenis Starter Motor</h3>
+        <p><strong>A. DOL (Direct On Line Starter)</strong></p>
+        <ul>
+          <li>Motor dihubungkan langsung ke sumber</li>
+          <li>Arus start besar</li>
+          <li>Rangkaian sederhana</li>
+          <li>Digunakan untuk motor kecil–menengah</li>
+        </ul>
+        <p><strong>B. Star–Delta Starter</strong></p>
+        <ul>
+          <li>Start awal STAR → arus kecil</li>
+          <li>Running DELTA → torsi penuh</li>
+          <li>Digunakan untuk motor besar</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>3. Diagram Alur Sistem</h3>
+        <p>Power Supply →<br>
+          MCB →<br>
+          Contactor →<br>
+          Overload Relay →<br>
+          Motor</p>
+        <p><em>Sistem kontrol selalu 24VDC, sistem daya bisa 380–440VAC</em></p>
+      </div>
+
+      <div class="section">
+        <h3>3A. Pemisahan Sistem DAYA & KONTROL</h3>
+        <p><strong>1. Rangkaian DAYA (Power Circuit)</strong></p>
+        <ul>
+          <li>Sumber 3 phase: R – S – T (atau L1 – L2 – L3)</li>
+          <li>Masuk ke MCB / MCCB</li>
+          <li>Masuk ke Contactor (terminal L1 L2 L3)</li>
+          <li>Keluar ke Overload Relay</li>
+          <li>Menuju Motor (terminal U – V – W)</li>
+        </ul>
+
+        <p><strong>2. Rangkaian KONTROL (Control Circuit)</strong></p>
+        <ul>
+          <li>Supply kontrol: 24VDC atau 220VAC</li>
+          <li>Push Button STOP (NC)</li>
+          <li>Push Button START (NO)</li>
+          <li>Coil Contactor (A1 – A2)</li>
+          <li>Kontak bantu NO untuk self-holding</li>
+          <li>Kontak NC Overload (95–96)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>3B. Urutan Kerja DOL Starter (Step by Step)</h3>
+        <ol>
+          <li>Tombol STOP dalam kondisi normal (NC tertutup)</li>
+          <li>Tombol START ditekan</li>
+          <li>Arus mengalir ke coil contactor (A1–A2)</li>
+          <li>Contactor menarik → kontak utama menutup</li>
+          <li>Tegangan 3 phase masuk ke motor (U–V–W)</li>
+          <li>Motor berputar</li>
+          <li>Kontak bantu NO menahan arus (self-hold)</li>
+          <li>Jika overload terjadi → kontak 95–96 terbuka → motor mati</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h3>3C. Logika Star–Delta Starter</h3>
+        <ul>
+          <li>Motor harus bertipe 6 terminal (U1 V1 W1 – U2 V2 W2)</li>
+          <li>Start awal menggunakan hubungan STAR</li>
+          <li>Timer aktif menghitung waktu (3–10 detik)</li>
+          <li>Setelah waktu tercapai:</li>
+          <ul>
+            <li>Contactor STAR OFF</li>
+            <li>Contactor DELTA ON</li>
+          </ul>
+          <li>Interlock wajib agar STAR dan DELTA tidak aktif bersamaan</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>4. Galeri Komponen</h3>
+        <div class="gallery">
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/800px-Contactor_electric.jpg', 'Contactor', 'Saklar elektromagnetik daya tinggi untuk menghidupkan/mematikan motor.', 'https://commons.wikimedia.org/wiki/File:Contactor_electric.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/300px-Contactor_electric.jpg" alt="Contactor">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Thermal_overload_relay.jpg/800px-Thermal_overload_relay.jpg', 'Thermal Overload Relay', 'Melindungi motor dari panas berlebih akibat beban lebih.', 'https://commons.wikimedia.org/wiki/File:Thermal_overload_relay.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Thermal_overload_relay.jpg/300px-Thermal_overload_relay.jpg" alt="Thermal Overload Relay">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Push_button_start_stop.jpg/800px-Push_button_start_stop.jpg', 'Push Button START / STOP', 'Tombol kontrol manual untuk mengasut dan menghentikan motor.', 'https://commons.wikimedia.org/wiki/File:Push_button_start_stop.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Push_button_start_stop.jpg/300px-Push_button_start_stop.jpg" alt="Push Button START / STOP">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Timer_relay.jpg/800px-Timer_relay.jpg', 'Timer (untuk Star–Delta)', 'Mengatur waktu perpindahan dari STAR ke DELTA.', 'https://commons.wikimedia.org/wiki/File:Timer_relay.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Timer_relay.jpg/300px-Timer_relay.jpg" alt="Timer Relay">
+          </div>
+          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Three_phase_induction_motor.jpg/800px-Three_phase_induction_motor.jpg', 'Motor Induksi 3 Phase', 'Motor listrik utama di kapal untuk pompa, fan, dan compressor.', 'https://commons.wikimedia.org/wiki/File:Three_phase_induction_motor.jpg')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Three_phase_induction_motor.jpg/300px-Three_phase_induction_motor.jpg" alt="Motor Induksi 3 Phase">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>5. Perbandingan DOL vs Star–Delta</h3>
+        <p><strong>DOL:</strong></p>
+        <ul>
+          <li>Arus start besar</li>
+          <li>Rangkaian sederhana</li>
+          <li>Murah</li>
+        </ul>
+        <p><strong>Star–Delta:</strong></p>
+        <ul>
+          <li>Arus start kecil</li>
+          <li>Rangkaian lebih kompleks</li>
+          <li>Motor lebih awet</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>6. Aplikasi di Kapal</h3>
+        <ul>
+          <li>Pompa ballast</li>
+          <li>Pompa pendingin mesin</li>
+          <li>Fan ventilasi engine room</li>
+          <li>Compressor udara</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>7. Safety & Interlock</h3>
+        <ul>
+          <li>Overload relay WAJIB aktif</li>
+          <li>Interlock contactor STAR–DELTA</li>
+          <li>LOTO sebelum servis</li>
+          <li>Jangan start motor tanpa beban dicek</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>8. Kesalahan Umum di Bengkel</h3>
+        <ul>
+          <li>Salah urutan phase → motor berputar terbalik</li>
+          <li>Overload disetel terlalu besar → motor gosong</li>
+          <li>Kontak bantu tidak dipasang → motor mati saat tombol dilepas</li>
+          <li>STAR & DELTA aktif bersamaan → short circuit</li>
+          <li>Kontrol dan daya disatukan → bahaya fatal</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMAGE MODAL -->
+  <div id="imageModal" class="image-modal">
+    <span class="close-btn" style="color:white;font-size:2rem;position:absolute;top:1rem;right:1rem;cursor:pointer;" onclick="closeImageModal()">&times;</span>
+    <div class="image-modal-content">
+      <img id="modalImage" src="" alt="">
+    </div>
+    <div class="image-caption" id="modalCaption"></div>
+    <div class="image-source" id="modalSource"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <p>Ravindo Learning System (RLS)</p>
+      <p>Channel WhatsApp: KOMUNITAS PELAUT</p>
+      <p>“Belajar sistem, bukan hafalan”</p>
+      <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;">
+        Website ini dibuat oleh RLS Ravindo Learning System by Rafael Sukirno, CE
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // MODAL FUNCTIONS
+    function openModal(modalId) {
+      document.getElementById(modalId).style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    // IMAGE MODAL
+    function openImageModal(src, caption, description, sourceUrl) {
+      const modal = document.getElementById('imageModal');
+      const img = document.getElementById('modalImage');
+      const cap = document.getElementById('modalCaption');
+      const srcEl = document.getElementById('modalSource');
+
+      img.src = src;
+      img.alt = caption;
+      cap.innerHTML = `<strong>${caption}</strong><br>${description}`;
+      srcEl.innerHTML = `Sumber: <a href="${sourceUrl}" target="_blank" style="color:var(--accent);">${sourceUrl}</a>`;
+
+      modal.style.display = 'flex';
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageModal').style.display = 'none';
+    }
+
+    // QUIZ LOGIC
+    let selectedAnswers = {};
+
+    function selectOption(element, optionId) {
+      // Remove selected class from siblings
+      const options = element.parentElement.querySelectorAll('.quiz-option');
+      options.forEach(opt => opt.classList.remove('selected'));
+      
+      // Add selected class to clicked option
+      element.classList.add('selected');
+      
+      // Store answer
+      const questionNum = optionId.slice(-1);
+      selectedAnswers[questionNum] = optionId;
+    }
+
+    function submitQuiz() {
+      const correctAnswers = {
+        '1': 'B1',
+        '2': 'B2',
+        '3': 'C3',
+        '4': 'B4',
+        '5': 'B5'
+      };
+
+      let score = 0;
+      for (let q in correctAnswers) {
+        if (selectedAnswers[q] === correctAnswers[q]) {
+          score++;
+        }
+      }
+
+      const percentage = (score / 5) * 100;
+      let message = `Skor Anda: ${score}/5 (${percentage}%)<br>`;
+      
+      if (percentage >= 80) {
+        message += '<span style="color:var(--success);">Luar biasa! Anda siap jadi engineer kapal!</span>';
+      } else if (percentage >= 60) {
+        message += '<span style="color:orange;">Bagus! Pelajari lagi bagian yang kurang.</span>';
+      } else {
+        message += '<span style="color:red;">Perlu belajar lebih banyak. Ulangi modul ini!</span>';
+      }
+
+      document.getElementById('quizResult').innerHTML = message;
+      document.getElementById('quizResult').style.display = 'block';
+    }
+
+    // CLOSE MODALS ON ESCAPE KEY
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(modal => {
+          modal.style.display = 'none';
+        });
+        closeImageModal();
+      }
+    });
+
+    // CLOSE MODALS ON CLICK OUTSIDE
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+      if (event.target.id === 'imageModal') {
+        closeImageModal();
+      }
+    };
+  </script>
+</body>
+</html>
+
