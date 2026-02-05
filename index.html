@@ -1,995 +1,938 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ravindo Learning System (RLS)</title>
-  <style>
-    /* === GLOBAL STYLES === */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+import React, { useState } from 'react';
+
+export default function App() {
+  const [activeSection, setActiveSection] = useState('home');
+  const [checklistItems, setChecklistItems] = useState({
+    bearingMaintenance: false,
+    purifierOperation: false,
+    steeringGearCheck: false,
+    electricalSafety: false
+  });
+  
+  const [simulationStep, setSimulationStep] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  
+  const simulationData = [
+    {
+      scenario: "Sensor level tangki menunjukkan 'EMPTY' padahal tangki penuh. Apa kemungkinan penyebab pertama?",
+      options: [
+        "Kabel sensor putus",
+        "Sensor terkena korosi",
+        "Setting controller salah",
+        "Power supply mati"
+      ],
+      correctAnswer: 1,
+      explanation: "Sensor level yang terkena korosi akan memberikan pembacaan tidak akurat. Korosi umum terjadi di lingkungan laut yang lembab dan asin. Bersihkan sensor dan periksa koneksi sebelum mengganti komponen."
+    },
+    {
+      scenario: "Setelah membersihkan sensor, level tetap tidak akurat. Langkah berikutnya?",
+      options: [
+        "Ganti sensor baru",
+        "Periksa kalibrasi transmitter",
+        "Reset sistem kontrol",
+        "Periksa grounding sistem"
+      ],
+      correctAnswer: 1,
+      explanation: "Kalibrasi transmitter harus diperiksa setelah pembersihan sensor. Kesalahan kalibrasi sering terjadi setelah maintenance fisik pada sensor. Lakukan kalibrasi ulang sesuai prosedur pabrik."
+    },
+    {
+      scenario: "Transmitter sudah dikalibrasi, tapi sistem masih error. Apa yang harus diperiksa?",
+      options: [
+        "Konektor kabel di junction box",
+        "Software monitoring",
+        "Fuse pada panel kontrol",
+        "Setting alarm threshold"
+      ],
+      correctAnswer: 0,
+      explanation: "Konektor yang longgar atau berkarat di junction box sering menyebabkan sinyal tidak stabil. Periksa semua koneksi fisik, bersihkan dari karat, dan pastikan kencang sebelum melanjutkan ke diagnosa software."
     }
+  ];
 
-    :root {
-      --primary: #0d3b66;
-      --secondary: #1a5f9e;
-      --accent: #f4d35e;
-      --light: #f8f9fa;
-      --dark: #212529;
-      --gray: #6c757d;
-      --success: #28a745;
+  const handleChecklistToggle = (item) => {
+    setChecklistItems(prev => ({
+      ...prev,
+      [item]: !prev[item]
+    }));
+  };
+
+  const handleAnswerSelect = (index) => {
+    setSelectedAnswer(index);
+    setShowExplanation(true);
+  };
+
+  const nextSimulationStep = () => {
+    if (simulationStep < simulationData.length - 1) {
+      setSimulationStep(prev => prev + 1);
+      setSelectedAnswer(null);
+      setShowExplanation(false);
     }
+  };
 
-    body {
-      background-color: #f0f4f8;
-      color: var(--dark);
-      line-height: 1.6;
-    }
+  const resetSimulation = () => {
+    setSimulationStep(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+  };
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-
-    header {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: white;
-      text-align: center;
-      padding: 2rem 1rem;
-    }
-
-    h1 {
-      font-size: 2.2rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-      font-size: 1.4rem;
-      margin-bottom: 1rem;
-      opacity: 0.9;
-    }
-
-    .tagline {
-      font-style: italic;
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
-    }
-
-    /* === BUTTON GRID === */
-    .button-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 1rem;
-      margin-bottom: 3rem;
-    }
-
-    .btn {
-      background-color: var(--accent);
-      color: var(--primary);
-      border: none;
-      padding: 1rem;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }
-
-    /* === MODAL STYLES === */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-      overflow-y: auto;
-      padding: 2rem 1rem;
-    }
-
-    .modal-content {
-      background: white;
-      max-width: 900px;
-      margin: 2rem auto;
-      border-radius: 12px;
-      padding: 2rem;
-      position: relative;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      font-size: 1.5rem;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--gray);
-    }
-
-    .modal h2 {
-      color: var(--primary);
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid var(--accent);
-    }
-
-    .section {
-      margin-bottom: 2rem;
-    }
-
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 1rem;
-      margin: 1rem 0;
-    }
-
-    .gallery-item {
-      cursor: pointer;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-      transition: all 0.2s;
-    }
-
-    .gallery-item:hover {
-      border-color: var(--secondary);
-      transform: scale(1.03);
-    }
-
-    .gallery-item img {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .diagram-container {
-      text-align: center;
-      margin: 1.5rem 0;
-    }
-
-    .diagram-container img {
-      max-width: 100%;
-      height: auto;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      margin: 0 auto;
-    }
-
-    .video-container {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
-
-    .video-container iframe {
-      width: 100%;
-      aspect-ratio: 16/9;
-      border-radius: 8px;
-    }
-
-    ol, ul {
-      padding-left: 1.5rem;
-      margin: 1rem 0;
-    }
-
-    li {
-      margin-bottom: 0.5rem;
-    }
-
-    /* === FOOTER === */
-    footer {
-      background: var(--primary);
-      color: white;
-      text-align: center;
-      padding: 1.5rem;
-      margin-top: 3rem;
-      font-size: 0.95rem;
-    }
-
-    /* === IMAGE MODAL === */
-    .image-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 2000;
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .image-modal-content {
-      max-width: 90%;
-      max-height: 80%;
-    }
-
-    .image-modal-content img {
-      max-width: 100%;
-      max-height: 70vh;
-      border: 2px solid white;
-      border-radius: 8px;
-    }
-
-    .image-caption {
-      color: white;
-      margin-top: 1rem;
-      text-align: center;
-      max-width: 800px;
-    }
-
-    .image-source {
-      color: var(--accent);
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-    }
-
-    /* === QUIZ STYLES === */
-    .quiz-question {
-      margin-bottom: 1.5rem;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-
-    .quiz-options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-
-    .quiz-option {
-      padding: 0.75rem;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .quiz-option:hover {
-      background: #e9ecef;
-    }
-
-    .quiz-option.selected {
-      background: var(--secondary);
-      color: white;
-    }
-
-    .quiz-submit {
-      background: var(--success);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 1rem;
-    }
-
-    .quiz-result {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background: var(--light);
-      border-radius: 8px;
-      text-align: center;
-      font-weight: bold;
-      display: none;
-    }
-
-    /* === RESPONSIVE === */
-    @media (max-width: 600px) {
-      h1 { font-size: 1.8rem; }
-      .subtitle { font-size: 1.2rem; }
-      .tagline { font-size: 1rem; }
-      .btn { padding: 0.8rem; font-size: 0.95rem; }
-      .modal-content { padding: 1.5rem; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- HEADER -->
-  <header>
-    <div class="container">
-      <h1>Ravindo Learning System (RLS)</h1>
-      <div class="subtitle">Lab Workshop Pneumatic, Sensor & Automation</div>
-      <div class="tagline">“Kontrol kapal dimulai dari sinyal, bukan dari tenaga.”</div>
-    </div>
-  </header>
-
-  <!-- MAIN BUTTONS -->
-  <div class="container">
-    <div class="button-grid">
-      <button class="btn" onclick="openModal('pneumatic')">Pneumatic System</button>
-      <button class="btn" onclick="openModal('sensor')">Sensor System</button>
-      <button class="btn" onclick="openModal('automation')">Automation & Control</button>
-      <button class="btn" onclick="openModal('safety')">Safety</button>
-      <button class="btn" onclick="openModal('quiz')">Quiz Cepat</button>
-      <button class="btn" onclick="openModal('praktikum')">Mode Praktikum</button>
-      <button class="btn" onclick="openModal('motorStarter')">Motor Starter</button>
-    </div>
-  </div>
-
-  <!-- PNEUMATIC MODAL -->
-  <div id="pneumatic" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('pneumatic')">&times;</button>
-      <h2>Sistem Pneumatik di Kapal</h2>
-
-      <div class="section">
-        <h3>0. Alur Sistem Terintegrasi di Kapal</h3>
-        <p>Push Button / Sensor →<br>
-          Power Supply 24VDC →<br>
-          Solenoid Valve →<br>
-          Pneumatic Actuator →<br>
-          Gerakan Mekanis</p>
-        <p><em>Semua sistem otomasi kapal dimulai dari sinyal listrik!</em></p>
-      </div>
-
-      <div class="section">
-        <h3>A. Gambaran Umum</h3>
-        <p><strong>Apa itu sistem pneumatik?</strong> Sistem yang menggunakan udara bertekanan untuk menggerakkan aktuator (silinder, motor).</p>
-        <p><strong>Mengapa digunakan di kapal?</strong> Aman (tidak percikan api), tahan korosi, ringan, dan mudah dikendalikan.</p>
-        <p><strong>Perbedaan dengan hidrolik:</strong> Pneumatik pakai udara (kompresibel), hidrolik pakai oli (tidak kompresibel). Pneumatik lebih aman di area berisiko ledakan.</p>
-      </div>
-
-      <div class="section">
-        <h3>B. Komponen Utama</h3>
-        <div class="gallery">
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Air_compressor.jpg/800px-Air_compressor.jpg', 'Kompresor Udara', 'Menghasilkan udara bertekanan untuk sistem pneumatik.', 'https://commons.wikimedia.org/wiki/File:Air_compressor.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Air_compressor.jpg/300px-Air_compressor.jpg" alt="Kompresor Udara">
+  const Navigation = () => (
+    <nav className="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <span className="text-xl font-bold flex items-center">
+              <span className="mr-2">⚓</span>
+              Maritime Learning Hub
+            </span>
           </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Air_receiver_tank.jpg/800px-Air_receiver_tank.jpg', 'Tangki Penampung Udara', 'Menyimpan udara bertekanan dan menstabilkan tekanan sistem.', 'https://commons.wikimedia.org/wiki/File:Air_receiver_tank.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Air_receiver_tank.jpg/300px-Air_receiver_tank.jpg" alt="Tangki Penampung">
+          <div className="hidden md:flex items-center space-x-1">
+            {[
+              { id: 'home', label: 'Home' },
+              { id: 'poltekpel-semester1', label: 'POLTEKPEL Semester 1' },
+              { id: 'semester3-teknika', label: 'Semester 3 TEKNIKA' },
+              { id: 'semester3-eto', label: 'Semester 3 ETO' },
+              { id: 'uht-electrical', label: 'UHT Electrical & Control' },
+              { id: 'modul-praktik', label: 'Modul Praktik' },
+              { id: 'video', label: 'Video Pembelajaran' },
+              { id: 'download', label: 'Download Offline Package' },
+              { id: 'about', label: 'About Lecturer' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeSection === item.id
+                    ? 'bg-blue-900 text-white'
+                    : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/FRL_unit.jpg/800px-FRL_unit.jpg', 'Unit FRL (Filter-Regulator-Lubricator)', 'Membersihkan, mengatur tekanan, dan melumasi udara sebelum ke aktuator.', 'https://commons.wikimedia.org/wiki/File:FRL_unit.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/FRL_unit.jpg/300px-FRL_unit.jpg" alt="FRL Unit">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Pressure_gauge.jpg/800px-Pressure_gauge.jpg', 'Pressure Gauge', 'Menunjukkan tekanan udara dalam sistem.', 'https://commons.wikimedia.org/wiki/File:Pressure_gauge.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Pressure_gauge.jpg/300px-Pressure_gauge.jpg" alt="Pressure Gauge">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/800px-Solenoid_valve.jpg', 'Solenoid Valve', 'Katup elektromagnetik yang mengontrol aliran udara berdasarkan sinyal listrik. Tegangan kontrol umum: 24VDC. Beberapa sistem lama: 220VAC. Kontrol berasal dari panel listrik / PLC / relay.', 'https://commons.wikimedia.org/wiki/File:Solenoid_valve.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/300px-Solenoid_valve.jpg" alt="Solenoid Valve">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Directional_control_valve.jpg/800px-Directional_control_valve.jpg', 'Directional Control Valve', 'Mengarahkan aliran udara ke silinder untuk gerakan maju/mundur.', 'https://commons.wikimedia.org/wiki/File:Directional_control_valve.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Directional_control_valve.jpg/300px-Directional_control_valve.jpg" alt="Directional Control Valve">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Pneumatic_cylinder.jpg/800px-Pneumatic_cylinder.jpg', 'Silinder Pneumatik', 'Mengubah energi udara menjadi gerakan linear (maju/mundur).', 'https://commons.wikimedia.org/wiki/File:Pneumatic_cylinder.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Pneumatic_cylinder.jpg/300px-Pneumatic_cylinder.jpg" alt="Silinder Pneumatik">
+          <div className="md:hidden flex items-center">
+            <button className="text-blue-100 hover:text-white">
+              <span className="sr-only">Open menu</span>
+              <div className="w-6 h-0.5 bg-white mb-1.5"></div>
+              <div className="w-6 h-0.5 bg-white mb-1.5"></div>
+              <div className="w-6 h-0.5 bg-white"></div>
+            </button>
           </div>
         </div>
       </div>
+    </nav>
+  );
 
-      <div class="section">
-        <h3>C. Diagram Alir Sistem</h3>
-        <div class="diagram-container">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Pneumatic_system_diagram.svg/800px-Pneumatic_system_diagram.svg.png" alt="Diagram Alir Sistem Pneumatik">
-          <p><em>Sumber: Wikimedia Commons</em></p>
+  const HomeSection = () => (
+    <section className="py-16 bg-gradient-to-r from-blue-50 to-cyan-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          Maritime Learning Hub – Practical & Theoretical Education
+        </h1>
+        <p className="text-xl text-gray-700 mb-12 max-w-3xl mx-auto">
+          Integrating Maritime 5.0, Digital Learning, and Hands-on Training
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          {[
+            { title: "POLTEKPEL Semester 1", desc: "Teori dasar pelayaran, teknik, keselamatan, dan pengantar sistem kapal", icon: "📘" },
+            { title: "Semester 3 TEKNIKA & ETO", desc: "Sistem kelistrikan kapal, kontrol otomatis, troubleshooting, dan praktik bengkel", icon: "⚙️" },
+            { title: "UHT Electrical & Control", desc: "Teori dasar kelistrikan, sistem kontrol maritim, dan studi kasus kegagalan sistem", icon: "🔌" }
+          ].map((item, index) => (
+            <div 
+              key={index}
+              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => setActiveSection(item.title.includes('POLTEKPEL') ? 'poltekpel-semester1' : item.title.includes('UHT') ? 'uht-electrical' : 'semester3-teknika')}
+            >
+              <div className="text-4xl mb-4">{item.icon}</div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h2>
+              <p className="text-gray-600">{item.desc}</p>
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div class="section">
-        <h3>D. Prinsip Kerja (Langkah demi Langkah)</h3>
-        <ol>
-          <li>Tombol ditekan → sinyal listrik ON</li>
-          <li>Kompresor menyala → mengisi tangki udara</li>
-          <li>Tekanan udara tersimpan di tangki</li>
-          <li>Solenoid valve aktif → membuka aliran udara</li>
-          <li>Udara masuk ke silinder → piston bergerak</li>
-          <li>Udara bekas keluar melalui exhaust</li>
-        </ol>
-        <p><strong>Catatan:</strong> Tegangan kontrol umum: 24VDC. Beberapa sistem lama: 220VAC. Kontrol berasal dari panel listrik / PLC / relay.</p>
-      </div>
-
-      <div class="section">
-        <h3>E. Aplikasi di Kapal</h3>
-        <ul>
-          <li>Katup kontrol bahan bakar</li>
-          <li>Pintu otomatis engine room</li>
-          <li>Aktuator untuk sistem pemadam kebakaran</li>
-          <li>Alat bantu mesin utama</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>F. Video Pembelajaran</h3>
-        <div class="video-container">
-          <iframe src="https://www.youtube.com/embed/Hn3k9cKZxXU" title="Pneumatic Basics" allowfullscreen></iframe>
-          <iframe src="https://www.youtube.com/embed/2bYz7XHqf5Q" title="Marine Pneumatics" allowfullscreen></iframe>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SENSOR MODAL -->
-  <div id="sensor" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('sensor')">&times;</button>
-      <h2>Sistem Sensor di Kapal</h2>
-
-      <div class="section">
-        <h3>A. Konsep Sensor</h3>
-        <p>Sensor adalah "indra" sistem kontrol. Mengubah kondisi fisik (tekanan, suhu, posisi) menjadi sinyal listrik.</p>
-        <p><strong>Analog:</strong> Output kontinu (misal: 4–20 mA untuk tekanan).</p>
-        <p><strong>Digital:</strong> Output ON/OFF (misal: proximity switch).</p>
-      </div>
-
-      <div class="section">
-        <h3>B. Jenis-Jenis Sensor</h3>
-        <div class="gallery">
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Inductive_proximity_sensor.jpg/800px-Inductive_proximity_sensor.jpg', 'Proximity Sensor (Induktif)', 'Mendeteksi logam tanpa kontak. Output: 24VDC digital.', 'https://commons.wikimedia.org/wiki/File:Inductive_proximity_sensor.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Inductive_proximity_sensor.jpg/300px-Inductive_proximity_sensor.jpg" alt="Proximity Sensor">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Pressure_transmitter.jpg/800px-Pressure_transmitter.jpg', 'Pressure Sensor', 'Mengukur tekanan fluida. Output: 4–20 mA analog.', 'https://commons.wikimedia.org/wiki/File:Pressure_transmitter.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Pressure_transmitter.jpg/300px-Pressure_transmitter.jpg" alt="Pressure Sensor">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Thermocouple.jpg/800px-Thermocouple.jpg', 'Temperature Sensor (Thermocouple)', 'Mengukur suhu mesin/pipa. Output: mV atau 4–20 mA.', 'https://commons.wikimedia.org/wiki/File:Thermocouple.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Thermocouple.jpg/300px-Thermocouple.jpg" alt="Thermocouple">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Level_sensor.jpg/800px-Level_sensor.jpg', 'Level Sensor', 'Mendeteksi ketinggian cairan di tangki.', 'https://commons.wikimedia.org/wiki/File:Level_sensor.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Level_sensor.jpg/300px-Level_sensor.jpg" alt="Level Sensor">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Limit_switch.jpg/800px-Limit_switch.jpg', 'Limit Switch', 'Saklar mekanis untuk deteksi posisi akhir.', 'https://commons.wikimedia.org/wiki/File:Limit_switch.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Limit_switch.jpg/300px-Limit_switch.jpg" alt="Limit Switch">
+        
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Fitur Utama Platform</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+            {[
+              "✅ Mode Offline - Akses materi tanpa koneksi internet",
+              "✅ Modul Praktik Interaktif dengan checklist",
+              "✅ Simulasi Troubleshooting Sistem Kelistrikan",
+              "✅ Video Pembelajaran HD",
+              "✅ Download Paket Materi Lengkap",
+              "✅ Responsif di Semua Perangkat"
+            ].map((feature, index) => (
+              <div key={index} className="flex items-start">
+                <span className="text-green-500 text-xl mr-3 mt-1">✓</span>
+                <span className="text-gray-700">{feature}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    </section>
+  );
 
-      <div class="section">
-        <h3>C. Diagram Alir Sinyal</h3>
-        <div class="diagram-container">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Sensor_to_controller_signal_flow.png/800px-Sensor_to_controller_signal_flow.png" alt="Alur Sinyal Sensor ke Kontroler">
-          <p><em>Sumber: Wikimedia Commons</em></p>
+  const PoltekpelSemester1Section = () => (
+    <section className="py-12 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">POLTEKPEL Semester 1</h1>
+          <p className="text-xl text-blue-700">Dasar-Dasar Operasi Sistem Permesinan Kapal (E.15)</p>
         </div>
-      </div>
-
-      <div class="section">
-        <h3>D. Tegangan & Sinyal</h3>
-        <ul>
-          <li><strong>Tegangan kontrol:</strong> 24VDC (standar industri maritim)</li>
-          <li><strong>Sinyal analog:</strong> 4–20 mA (lebih tahan noise daripada 0–10V)</li>
-          <li><strong>Sinyal digital:</strong> ON = 24V, OFF = 0V</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- AUTOMATION MODAL -->
-  <div id="automation" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('automation')">&times;</button>
-      <h2>Sistem Otomasi & Kontrol</h2>
-
-      <div class="section">
-        <h3>A. Gambaran Umum</h3>
-        <p>Sistem kontrol otomatis bekerja dalam 3 tahap:<br>
-          <strong>INPUT</strong> (sensor) → <strong>PROSES</strong> (PLC/logika) → <strong>OUTPUT</strong> (aktuator)</p>
-      </div>
-
-      <div class="section">
-        <h3>B. Komponen Kontrol</h3>
-        <div class="gallery">
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/24V_DC_power_supply.jpg/800px-24V_DC_power_supply.jpg', 'Power Supply 24VDC', 'Sumber daya untuk seluruh sistem kontrol.', 'https://commons.wikimedia.org/wiki/File:24V_DC_power_supply.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/24V_DC_power_supply.jpg/300px-24V_DC_power_supply.jpg" alt="Power Supply">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Relay_module.jpg/800px-Relay_module.jpg', 'Relay', 'Saklar elektromagnetik untuk mengontrol beban besar dengan sinyal kecil.', 'https://commons.wikimedia.org/wiki/File:Relay_module.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Relay_module.jpg/300px-Relay_module.jpg" alt="Relay">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/PLC_Siemens_S7-1200.jpg/800px-PLC_Siemens_S7-1200.jpg', 'PLC (Programmable Logic Controller)', 'Otak sistem otomasi. Menjalankan logika berdasarkan input.', 'https://commons.wikimedia.org/wiki/File:PLC_Siemens_S7-1200.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/PLC_Siemens_S7-1200.jpg/300px-PLC_Siemens_S7-1200.jpg" alt="PLC">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/800px-Contactor_electric.jpg', 'Contactor', 'Relay berdaya tinggi untuk mengontrol motor/pompa.', 'https://commons.wikimedia.org/wiki/File:Contactor_electric.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/300px-Contactor_electric.jpg" alt="Contactor">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/800px-Solenoid_valve.jpg', 'Solenoid Valve', 'Katup pneumatik/hidrolik yang dikontrol listrik.', 'https://commons.wikimedia.org/wiki/File:Solenoid_valve.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Solenoid_valve.jpg/300px-Solenoid_valve.jpg" alt="Solenoid Valve">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Indicator_lamp.jpg/800px-Indicator_lamp.jpg', 'Lampu Indikator', 'Memberi status visual (ON/OFF/Alarm).', 'https://commons.wikimedia.org/wiki/File:Indicator_lamp.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Indicator_lamp.jpg/300px-Indicator_lamp.jpg" alt="Indicator Lamp">
-          </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[
+            {
+              title: "Cargo Handling System",
+              topics: [
+                "Prinsip kerja pompa kargo",
+                "Sistem perpipaan dan katup",
+                "Safety valve dan pressure control",
+                "Regulasi ISGOTT"
+              ],
+              practices: [
+                "Prosedur stripping tangki",
+                "Kalibrasi flow meter",
+                "Troubleshooting kebocoran seal pompa"
+              ]
+            },
+            {
+              title: "Deck Machinery",
+              topics: [
+                "Sistem kemudi (steering gear)",
+                "Windlass dan anchor handling",
+                "Crane operasi deck",
+                "Winch dan mooring system"
+              ],
+              practices: [
+                "Pemeriksaan steering gear",
+                "Pelumasan sistem winch",
+                "Troubleshooting hydraulic system"
+              ]
+            },
+            {
+              title: "Hotel Systems",
+              topics: [
+                "Sistem AC dan refrigerasi",
+                "Sistem plumbing kapal",
+                "Sewage treatment plant",
+                "Fire fighting system"
+              ],
+              practices: [
+                "Maintenance AC unit",
+                "Pemeriksaan fire pump",
+                "Troubleshooting chiller system"
+              ]
+            },
+            {
+              title: "Safety & Regulations",
+              topics: [
+                "ISM Code dan ISPS",
+                "SOLAS requirements",
+                "PPE dan prosedur darurat",
+                "Risk assessment di kapal"
+              ],
+              practices: [
+                "Simulasi kebakaran",
+                "Emergency drill procedure",
+                "Penggunaan breathing apparatus"
+              ]
+            }
+          ].map((module, index) => (
+            <div key={index} className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+              <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center">
+                <span className="mr-2">챕</span>
+                {module.title}
+              </h2>
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">Materi Teori:</h3>
+                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                  {module.topics.map((topic, i) => (
+                    <li key={i}>{topic}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Praktik:</h3>
+                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                  {module.practices.map((practice, i) => (
+                    <li key={i}>{practice}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div class="section">
-        <h3>C. Diagram Sistem Otomasi</h3>
-        <div class="diagram-container">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Automation_system_schematic.svg/800px-Automation_system_schematic.svg.png" alt="Skema Sistem Otomasi">
-          <p><em>Sumber: Wikimedia Commons</em></p>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>D. Contoh Urutan Kerja</h3>
-        <ol>
-          <li>Pressure sensor mendeteksi tekanan rendah</li>
-          <li>Sinyal dikirim ke PLC</li>
-          <li>PLC menjalankan logika: "Jika tekanan < 2 bar, nyalakan pompa"</li>
-          <li>PLC mengaktifkan relay</li>
-          <li>Relay menghidupkan contactor</li>
-          <li>Pompa menyala → tekanan naik</li>
-        </ol>
-      </div>
-
-      <div class="section">
-        <h3>E. Aplikasi di Kapal</h3>
-        <ul>
-          <li>Alarm bilga (deteksi air di ruang mesin)</li>
-          <li>Kontrol pompa ballast otomatis</li>
-          <li>Monitoring suhu bearing mesin utama</li>
-          <li>Sistem pendingin otomatis</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>F. Video Pembelajaran</h3>
-        <div class="video-container">
-          <iframe src="https://www.youtube.com/embed/YJZsKZ0FqU8" title="PLC Basics for Marine" allowfullscreen></iframe>
-          <iframe src="https://www.youtube.com/embed/3oT8p8KzF5U" title="Marine Automation Systems" allowfullscreen></iframe>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SAFETY MODAL -->
-  <div id="safety" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('safety')">&times;</button>
-      <h2>Keselamatan Kerja</h2>
-
-      <div class="section">
-        <h3>A. Lock Out Tag Out (LOTO)</h3>
-        <p>Prosedur wajib sebelum servis sistem:<br>
-          Matikan sumber energi → Kunci dengan gembok → Pasang label peringatan</p>
-        <div class="diagram-container">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Lockout_tagout_example.jpg/800px-Lockout_tagout_example.jpg" alt="Contoh LOTO">
-          <p><em>Sumber: Wikimedia Commons</em></p>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>B. Bahaya Tekanan Udara</h3>
-        <p>Jangan pernah lepas fitting saat sistem bertekanan! Udara bertekanan bisa meledakkan partikel logam.</p>
-      </div>
-
-      <div class="section">
-        <h3>C. Keselamatan Listrik</h3>
-        <p>Gunakan multimeter untuk pastikan tidak ada tegangan sebelum sentuh kabel. Selalu pakai sarung tangan isolasi.</p>
-      </div>
-
-      <div class="section">
-        <h3>D. Alat Pelindung Diri (APD)</h3>
-        <div class="gallery">
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Safety_glasses.jpg/800px-Safety_glasses.jpg', 'Kacamata Pengaman', 'Melindungi mata dari partikel logam/debu.', 'https://commons.wikimedia.org/wiki/File:Safety_glasses.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Safety_glasses.jpg/300px-Safety_glasses.jpg" alt="Kacamata Pengaman">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Safety_gloves.jpg/800px-Safety_gloves.jpg', 'Sarung Tangan', 'Isolasi listrik dan perlindungan mekanis.', 'https://commons.wikimedia.org/wiki/File:Safety_gloves.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Safety_gloves.jpg/300px-Safety_gloves.jpg" alt="Sarung Tangan">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Hard_hat.jpg/800px-Hard_hat.jpg', 'Helm Pengaman', 'Wajib di area engine room.', 'https://commons.wikimedia.org/wiki/File:Hard_hat.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Hard_hat.jpg/300px-Hard_hat.jpg" alt="Helm Pengaman">
+        
+        <div className="mt-12 bg-white rounded-xl shadow-md p-6 border border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Latihan Soal Interaktif</h2>
+          <div className="space-y-4">
+            {[
+              "Jelaskan prinsip kerja cargo pump pada kapal tanker!",
+              "Apa saja komponen utama steering gear system dan fungsinya?",
+              "Bagaimana prosedur emergency stop pada deck machinery?",
+              "Sebutkan 5 jenis safety valve yang umum digunakan di kapal!"
+            ].map((question, index) => (
+              <div key={index} className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50">
+                <p className="font-medium">{index + 1}. {question}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+  );
 
-  <!-- QUIZ MODAL -->
-  <div id="quiz" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('quiz')">&times;</button>
-      <h2>Quiz Cepat</h2>
-      <p>Pilih jawaban terbaik untuk setiap pertanyaan.</p>
-
-      <div class="quiz-question">
-        <p>1. Apa fungsi utama FRL dalam sistem pneumatik?</p>
-        <div class="quiz-options">
-          <div class="quiz-option" onclick="selectOption(this, 'A1')">A. Menghasilkan udara bertekanan</div>
-          <div class="quiz-option" onclick="selectOption(this, 'B1')">B. Menyaring, mengatur tekanan, dan melumasi udara</div>
-          <div class="quiz-option" onclick="selectOption(this, 'C1')">C. Mengubah udara menjadi gerakan linear</div>
-          <div class="quiz-option" onclick="selectOption(this, 'D1')">D. Menyimpan udara bertekanan</div>
+  const Semester3TeknikaSection = () => (
+    <section className="py-12 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Semester 3 TEKNIKA</h1>
+          <p className="text-xl text-blue-700">Perawatan dan Perbaikan Permesinan Kapal</p>
         </div>
-      </div>
-
-      <div class="quiz-question">
-        <p>2. Sensor tekanan di kapal biasanya menghasilkan sinyal...</p>
-        <div class="quiz-options">
-          <div class="quiz-option" onclick="selectOption(this, 'A2')">A. 0–10V</div>
-          <div class="quiz-option" onclick="selectOption(this, 'B2')">B. 4–20 mA</div>
-          <div class="quiz-option" onclick="selectOption(this, 'C2')">C. 24VDC ON/OFF</div>
-          <div class="quiz-option" onclick="selectOption(this, 'D2')">D. Sinyal nirkabel</div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {[
+            {
+              title: "Electrical System on Ship",
+              content: "Sistem distribusi daya, switchboard operation, generator synchronization, dan proteksi sistem kelistrikan kapal."
+            },
+            {
+              title: "Marine Generator",
+              content: "Prinsip kerja generator diesel, AVR system, load sharing, dan troubleshooting common failures pada generator kapal."
+            },
+            {
+              title: "Emergency Power System",
+              content: "Emergency generator, battery system, UPS, dan prosedur transfer daya saat keadaan darurat."
+            },
+            {
+              title: "Switchboard System",
+              content: "Komponen switchboard, circuit breaker operation, monitoring system, dan prosedur maintenance berkala."
+            },
+            {
+              title: "Fault Diagnosis",
+              content: "Metode troubleshooting sistem kelistrikan, penggunaan multimeter dan clamp meter, analisis gangguan berdasarkan gejala."
+            },
+            {
+              title: "Safety Electrical Practice",
+              content: "Prosedur LOTO (Lock Out Tag Out), penggunaan PPE, safety saat bekerja dengan tegangan tinggi, dan emergency response."
+            }
+          ].map((module, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+              <h2 className="text-xl font-bold text-blue-900 mb-3 flex items-center">
+                <span className="text-2xl mr-2">⚡</span>
+                {module.title}
+              </h2>
+              <p className="text-gray-700">{module.content}</p>
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div class="quiz-question">
-        <p>3. Komponen yang berfungsi sebagai "otak" sistem otomasi adalah...</p>
-        <div class="quiz-options">
-          <div class="quiz-option" onclick="selectOption(this, 'A3')">A. Relay</div>
-          <div class="quiz-option" onclick="selectOption(this, 'B3')">B. Solenoid valve</div>
-          <div class="quiz-option" onclick="selectOption(this, 'C3')">C. PLC</div>
-          <div class="quiz-option" onclick="selectOption(this, 'D3')">D. Power supply</div>
-        </div>
-      </div>
-
-      <div class="quiz-question">
-        <p>4. Prosedur LOTO bertujuan untuk...</p>
-        <div class="quiz-options">
-          <div class="quiz-option" onclick="selectOption(this, 'A4')">A. Meningkatkan efisiensi kerja</div>
-          <div class="quiz-option" onclick="selectOption(this, 'B4')">B. Memastikan sistem benar-benar mati sebelum diservis</div>
-          <div class="quiz-option" onclick="selectOption(this, 'C4')">C. Menghemat energi</div>
-          <div class="quiz-option" onclick="selectOption(this, 'D4')">D. Mempercepat proses perbaikan</div>
-        </div>
-      </div>
-
-      <div class="quiz-question">
-        <p>5. Mengapa sistem pneumatik lebih aman daripada hidrolik di area berisiko ledakan?</p>
-        <div class="quiz-options">
-          <div class="quiz-option" onclick="selectOption(this, 'A5')">A. Lebih murah</div>
-          <div class="quiz-option" onclick="selectOption(this, 'B5')">B. Tidak menggunakan cairan yang mudah terbakar</div>
-          <div class="quiz-option" onclick="selectOption(this, 'C5')">C. Lebih kuat</div>
-          <div class="quiz-option" onclick="selectOption(this, 'D5')">D. Lebih cepat responsnya</div>
-        </div>
-      </div>
-
-      <button class="quiz-submit" onclick="submitQuiz()">Submit Jawaban</button>
-      <div class="quiz-result" id="quizResult"></div>
-    </div>
-  </div>
-
-  <!-- PRAKTIKUM MODAL -->
-  <div id="praktikum" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('praktikum')">&times;</button>
-      <h2>Mode Praktikum</h2>
-
-      <div class="section">
-        <h3>A. Alat yang Disiapkan</h3>
-        <ul>
-          <li>Power supply 24VDC</li>
-          <li>Multimeter</li>
-          <li>Solenoid valve</li>
-          <li>Selang pneumatik</li>
-          <li>Silinder pneumatik</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>B. Langkah Praktikum</h3>
-        <ol>
-          <li>Cek tegangan supply</li>
-          <li>Aktifkan solenoid</li>
-          <li>Amati gerakan silinder</li>
-          <li>Matikan sistem</li>
-        </ol>
-      </div>
-
-      <div class="section">
-        <h3>C. Kesalahan Umum Taruna</h3>
-        <ul>
-          <li>Salah pasang IN / OUT valve</li>
-          <li>Salah polaritas solenoid DC</li>
-          <li>Tekanan terlalu tinggi</li>
-          <li>Lupa exhaust</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>D. Safety Point</h3>
-        <ul>
-          <li>Pastikan tekanan nol sebelum bongkar</li>
-          <li>Gunakan APD</li>
-          <li>Ikuti prosedur LOTO</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- MOTOR STARTER MODAL -->
-  <div id="motorStarter" class="modal">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal('motorStarter')">&times;</button>
-      <h2>Sistem Starter Motor Listrik di Kapal</h2>
-
-      <div class="section">
-        <h3>1. Gambaran Umum</h3>
-        <p>Starter motor adalah sistem pengasutan motor listrik agar arus & torsi aman.</p>
-        <p>Digunakan pada pompa, blower, compressor, conveyor kapal.</p>
-        <p><strong>"Starter adalah jembatan antara sistem listrik dan sistem mekanik."</strong></p>
-      </div>
-
-      <div class="section">
-        <h3>2. Jenis Starter Motor</h3>
-        <p><strong>A. DOL (Direct On Line Starter)</strong></p>
-        <ul>
-          <li>Motor dihubungkan langsung ke sumber</li>
-          <li>Arus start besar</li>
-          <li>Rangkaian sederhana</li>
-          <li>Digunakan untuk motor kecil–menengah</li>
-        </ul>
-        <p><strong>B. Star–Delta Starter</strong></p>
-        <ul>
-          <li>Start awal STAR → arus kecil</li>
-          <li>Running DELTA → torsi penuh</li>
-          <li>Digunakan untuk motor besar</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>3. Diagram Alur Sistem</h3>
-        <p>Power Supply →<br>
-          MCB →<br>
-          Contactor →<br>
-          Overload Relay →<br>
-          Motor</p>
-        <p><em>Sistem kontrol selalu 24VDC, sistem daya bisa 380–440VAC</em></p>
-      </div>
-
-      <div class="section">
-        <h3>3A. Pemisahan Sistem DAYA & KONTROL</h3>
-        <p><strong>1. Rangkaian DAYA (Power Circuit)</strong></p>
-        <ul>
-          <li>Sumber 3 phase: R – S – T (atau L1 – L2 – L3)</li>
-          <li>Masuk ke MCB / MCCB</li>
-          <li>Masuk ke Contactor (terminal L1 L2 L3)</li>
-          <li>Keluar ke Overload Relay</li>
-          <li>Menuju Motor (terminal U – V – W)</li>
-        </ul>
-
-        <p><strong>2. Rangkaian KONTROL (Control Circuit)</strong></p>
-        <ul>
-          <li>Supply kontrol: 24VDC atau 220VAC</li>
-          <li>Push Button STOP (NC)</li>
-          <li>Push Button START (NO)</li>
-          <li>Coil Contactor (A1 – A2)</li>
-          <li>Kontak bantu NO untuk self-holding</li>
-          <li>Kontak NC Overload (95–96)</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>3B. Urutan Kerja DOL Starter (Step by Step)</h3>
-        <ol>
-          <li>Tombol STOP dalam kondisi normal (NC tertutup)</li>
-          <li>Tombol START ditekan</li>
-          <li>Arus mengalir ke coil contactor (A1–A2)</li>
-          <li>Contactor menarik → kontak utama menutup</li>
-          <li>Tegangan 3 phase masuk ke motor (U–V–W)</li>
-          <li>Motor berputar</li>
-          <li>Kontak bantu NO menahan arus (self-hold)</li>
-          <li>Jika overload terjadi → kontak 95–96 terbuka → motor mati</li>
-        </ol>
-      </div>
-
-      <div class="section">
-        <h3>3C. Logika Star–Delta Starter</h3>
-        <ul>
-          <li>Motor harus bertipe 6 terminal (U1 V1 W1 – U2 V2 W2)</li>
-          <li>Start awal menggunakan hubungan STAR</li>
-          <li>Timer aktif menghitung waktu (3–10 detik)</li>
-          <li>Setelah waktu tercapai:</li>
-          <ul>
-            <li>Contactor STAR OFF</li>
-            <li>Contactor DELTA ON</li>
-          </ul>
-          <li>Interlock wajib agar STAR dan DELTA tidak aktif bersamaan</li>
-        </ul>
-      </div>
-
-      <div class="section">
-        <h3>4. Galeri Komponen</h3>
-        <div class="gallery">
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/800px-Contactor_electric.jpg', 'Contactor', 'Saklar elektromagnetik daya tinggi untuk menghidupkan/mematikan motor.', 'https://commons.wikimedia.org/wiki/File:Contactor_electric.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Contactor_electric.jpg/300px-Contactor_electric.jpg" alt="Contactor">
+        
+        <div className="bg-white rounded-xl shadow-md p-6 mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Checklist Praktikum Kelistrikan Kapal</h2>
+          <div className="space-y-3">
+            {[
+              { id: 'bearingMaintenance', label: 'Perawatan Bearing Generator (Pelumasan & Pemeriksaan)' },
+              { id: 'purifierOperation', label: 'Operasi dan Maintenance Purifier System' },
+              { id: 'steeringGearCheck', label: 'Pemeriksaan Steering Gear Hydraulic System' },
+              { id: 'electricalSafety', label: 'Prosedur Safety Saat Bekerja dengan Sistem Bertegangan' }
+            ].map((item, index) => (
+              <label key={index} className="flex items-start p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={checklistItems[item.id]}
+                  onChange={() => handleChecklistToggle(item.id)}
+                  className="mt-1 h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="ml-3 text-gray-800">{item.label}</span>
+              </label>
+            ))}
           </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Thermal_overload_relay.jpg/800px-Thermal_overload_relay.jpg', 'Thermal Overload Relay', 'Melindungi motor dari panas berlebih akibat beban lebih.', 'https://commons.wikimedia.org/wiki/File:Thermal_overload_relay.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Thermal_overload_relay.jpg/300px-Thermal_overload_relay.jpg" alt="Thermal Overload Relay">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Push_button_start_stop.jpg/800px-Push_button_start_stop.jpg', 'Push Button START / STOP', 'Tombol kontrol manual untuk mengasut dan menghentikan motor.', 'https://commons.wikimedia.org/wiki/File:Push_button_start_stop.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Push_button_start_stop.jpg/300px-Push_button_start_stop.jpg" alt="Push Button START / STOP">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Timer_relay.jpg/800px-Timer_relay.jpg', 'Timer (untuk Star–Delta)', 'Mengatur waktu perpindahan dari STAR ke DELTA.', 'https://commons.wikimedia.org/wiki/File:Timer_relay.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Timer_relay.jpg/300px-Timer_relay.jpg" alt="Timer Relay">
-          </div>
-          <div class="gallery-item" onclick="openImageModal('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Three_phase_induction_motor.jpg/800px-Three_phase_induction_motor.jpg', 'Motor Induksi 3 Phase', 'Motor listrik utama di kapal untuk pompa, fan, dan compressor.', 'https://commons.wikimedia.org/wiki/File:Three_phase_induction_motor.jpg')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Three_phase_induction_motor.jpg/300px-Three_phase_induction_motor.jpg" alt="Motor Induksi 3 Phase">
+        </div>
+        
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-700 rounded-xl p-6 text-white">
+          <h2 className="text-2xl font-bold mb-4">Contoh Kasus Nyata di Kapal</h2>
+          <div className="space-y-4">
+            <div className="border-l-4 border-white pl-4 py-2">
+              <p className="font-medium">Kasus: Blackout total saat pelayaran di Selat Malaka</p>
+              <p className="mt-1">Penyebab: Failure pada governor generator utama yang tidak terdeteksi saat maintenance. Solusi: Implementasi predictive maintenance dengan vibration analysis dan thermal imaging pada semua generator.</p>
+            </div>
+            <div className="border-l-4 border-white pl-4 py-2">
+              <p className="font-medium">Kasus: Kebakaran di ruang engine akibat korsleting</p>
+              <p className="mt-1">Penyebab: Kabel yang aus tidak diganti saat maintenance berkala. Solusi: Penerapan checklist visual inspection kabel setiap 3 bulan dan penggunaan cable management system yang lebih baik.</p>
+            </div>
           </div>
         </div>
       </div>
+    </section>
+  );
 
-      <div class="section">
-        <h3>5. Perbandingan DOL vs Star–Delta</h3>
-        <p><strong>DOL:</strong></p>
-        <ul>
-          <li>Arus start besar</li>
-          <li>Rangkaian sederhana</li>
-          <li>Murah</li>
-        </ul>
-        <p><strong>Star–Delta:</strong></p>
-        <ul>
-          <li>Arus start kecil</li>
-          <li>Rangkaian lebih kompleks</li>
-          <li>Motor lebih awet</li>
-        </ul>
+  const UhtElectricalControlSection = () => (
+    <section className="py-12 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">UHT - Electrical & Control System</h1>
+          <p className="text-xl text-blue-700">Teori Dasar Electrical dan System Control</p>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+            <h2 className="text-2xl font-bold text-blue-900 mb-4 flex items-center">
+              <span className="text-2xl mr-2">🔋</span>
+              Materi Inti
+            </h2>
+            <ul className="space-y-3 text-gray-700">
+              <li className="flex">
+                <span className="text-green-500 mr-2 mt-1">✓</span>
+                <span>Prinsip dasar kelistrikan kapal (AC/DC, distribusi daya)</span>
+              </li>
+              <li className="flex">
+                <span className="text-green-500 mr-2 mt-1">✓</span>
+                <span>Sistem kontrol otomatis (PID controller, feedback system)</span>
+              </li>
+              <li className="flex">
+                <span className="text-green-500 mr-2 mt-1">✓</span>
+                <span>Instrumentasi maritim (sensor level, pressure, temperature)</span>
+              </li>
+              <li className="flex">
+                <span className="text-green-500 mr-2 mt-1">✓</span>
+                <span>Studi kasus kegagalan sistem listrik kapal</span>
+              </li>
+              <li className="flex">
+                <span className="text-green-500 mr-2 mt-1">✓</span>
+                <span>Electrical safety dan prosedur darurat</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-6 border border-blue-100">
+            <h2 className="text-2xl font-bold text-blue-900 mb-4 flex items-center">
+              <span className="text-2xl mr-2">📊</span>
+              Studi Kasus Kegagalan Sistem
+            </h2>
+            <div className="space-y-4">
+              <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50">
+                <p className="font-bold text-red-800">Kasus 1: Kegagalan Sistem Pengisian Tangki</p>
+                <p className="mt-1 text-gray-700">Kapal tanker mengalami overflow saat pengisian cargo karena sensor level gagal mendeteksi ketinggian cairan. Investigasi menunjukkan sensor korosi akibat kondensasi.</p>
+              </div>
+              <div className="border-l-4 border-amber-500 pl-4 py-2 bg-amber-50">
+                <p className="font-bold text-amber-800">Kasus 2: Blackout Saat Maneuver</p>
+                <p className="mt-1 text-gray-700">Kapal container mengalami blackout total saat entering port karena failure pada automatic voltage regulator (AVR) generator utama. Sistem transfer ke emergency generator gagal aktif.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-12 border border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Simulasi Troubleshooting Sistem Pengisian Tangki</h2>
+          
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="font-bold text-blue-900 mb-2">Langkah {simulationStep + 1} dari {simulationData.length}</p>
+              <p className="text-gray-800">{simulationData[simulationStep].scenario}</p>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              {simulationData[simulationStep].options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswerSelect(index)}
+                  disabled={showExplanation}
+                  className={`w-full text-left p-4 rounded-lg border transition-all ${
+                    selectedAnswer === index
+                      ? showExplanation
+                        ? (index === simulationData[simulationStep].correctAnswer 
+                            ? 'bg-green-100 border-green-500' 
+                            : 'bg-red-100 border-red-500')
+                        : 'bg-blue-100 border-blue-500'
+                      : 'bg-gray-50 border-gray-300 hover:border-blue-400'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            
+            {showExplanation && (
+              <div className={`p-4 rounded-lg mb-6 ${
+                selectedAnswer === simulationData[simulationStep].correctAnswer
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-red-50 border border-red-200'
+              }`}>
+                <p className="font-bold mb-2">
+                  {selectedAnswer === simulationData[simulationStep].correctAnswer
+                    ? '✅ Jawaban Benar!'
+                    : '❌ Jawaban Kurang Tepat'}
+                </p>
+                <p className="text-gray-800">{simulationData[simulationStep].explanation}</p>
+              </div>
+            )}
+            
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+              <button
+                onClick={resetSimulation}
+                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Ulangi Simulasi
+              </button>
+              <div className="flex gap-3">
+                {showExplanation && simulationStep < simulationData.length - 1 && (
+                  <button
+                    onClick={nextSimulationStep}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  >
+                    Lanjut ke Langkah Berikutnya →
+                  </button>
+                )}
+                {showExplanation && simulationStep === simulationData.length - 1 && (
+                  <button
+                    onClick={resetSimulation}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Selesai - Ulangi Simulasi
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="font-bold text-lg mb-3">Petunjuk Penggunaan Simulasi:</h3>
+              <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                <li>Pilih jawaban yang menurut Anda paling tepat untuk skenario yang diberikan</li>
+                <li>Sistem akan memberikan umpan balik dan penjelasan setelah Anda memilih jawaban</li>
+                <li>Lanjutkan ke langkah berikutnya setelah memahami penjelasan</li>
+                <li>Ulangi simulasi untuk memperdalam pemahaman troubleshooting</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-blue-50 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Diagram Kontrol Sistem Pengisian Tangki</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-4 overflow-x-auto">
+            <div className="min-w-[600px]">
+              <div className="flex mb-4">
+                <div className="w-1/3 p-2 text-center bg-blue-100 border border-blue-300 rounded">Sensor Level Tangki</div>
+                <div className="w-1/3 p-2 text-center bg-amber-100 border border-amber-300 rounded mx-2">Controller (PLC)</div>
+                <div className="w-1/3 p-2 text-center bg-green-100 border border-green-300 rounded">Actuator (Valve & Pump)</div>
+              </div>
+              <div className="flex mb-4 items-center">
+                <div className="w-1/3 h-12 flex items-center justify-center">↓ Sinyal 4-20mA</div>
+                <div className="w-1/3 h-12 flex items-center justify-center">↓ Logika Kontrol</div>
+                <div className="w-1/3 h-12 flex items-center justify-center">↓ Perintah Buka/Tutup</div>
+              </div>
+              <div className="flex mb-4">
+                <div className="w-1/3 p-2 bg-blue-50 border border-blue-200 rounded text-center">Pemantauan Level Real-time</div>
+                <div className="w-1/3 p-2 bg-amber-50 border border-amber-200 rounded mx-2 text-center">Perbandingan dengan Setpoint</div>
+                <div className="w-1/3 p-2 bg-green-50 border border-green-200 rounded text-center">Kontrol Otomatis Valve</div>
+              </div>
+              <div className="mt-6 p-3 bg-red-50 border border-red-200 rounded">
+                <p className="font-bold text-red-800">Safety Feature:</p>
+                <p className="mt-1">Sistem dilengkapi high-level alarm dan emergency shutdown valve yang aktif jika level melebihi 95% kapasitas.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
+  );
 
-      <div class="section">
-        <h3>6. Aplikasi di Kapal</h3>
-        <ul>
-          <li>Pompa ballast</li>
-          <li>Pompa pendingin mesin</li>
-          <li>Fan ventilasi engine room</li>
-          <li>Compressor udara</li>
-        </ul>
+  const AboutLecturerSection = () => (
+    <section className="py-16 bg-gradient-to-br from-blue-900 to-cyan-900 text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="mb-8">
+          <div className="w-32 h-32 bg-blue-700 rounded-full mx-auto flex items-center justify-center text-4xl">
+            RS
+          </div>
+        </div>
+        
+        <h1 className="text-4xl font-bold mb-4">Rafael Sukirno, CE</h1>
+        <p className="text-xl text-blue-200 mb-8">Dosen POLTEKPEL Surabaya & Universitas Hang Tuah</p>
+        
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-10">
+          <h2 className="text-2xl font-bold mb-6">Profil & Keahlian</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+            <div>
+              <h3 className="font-bold text-lg mb-3 flex items-center">
+                <span className="text-xl mr-2">🎓</span>
+                Pendidikan
+              </h3>
+              <ul className="space-y-2 text-blue-100">
+                <li>Sarjana Teknik Perkapalan - ITS Surabaya</li>
+                <li>Sertifikasi Electrical Engineer - ClassNK</li>
+                <li>Maritime Safety & Risk Management - DNV GL Academy</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg mb-3 flex items-center">
+                <span className="text-xl mr-2">⚙️</span>
+                Keahlian
+              </h3>
+              <ul className="space-y-2 text-blue-100">
+                <li>Electrical Marine System</li>
+                <li>Control System & Automation</li>
+                <li>Maritime Digital Learning</li>
+                <li>Troubleshooting Sistem Kelistrikan Kapal</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
+          <h2 className="text-2xl font-bold mb-4">Pesan untuk Taruna</h2>
+          <blockquote className="text-xl italic border-l-4 border-yellow-300 pl-4 py-2">
+            "Teknologi maritim terus berkembang, tapi fondasi pengetahuan dan keterampilan praktik tetap menjadi kunci kesuksesan di atas kapal. 
+            Platform ini saya buat untuk membantu kalian menguasai teori dan praktik secara terintegrasi, siap menghadapi tantangan dunia pelayaran modern."
+          </blockquote>
+          <p className="mt-4 font-bold text-yellow-200">- Rafael Sukirno, CE</p>
+        </div>
       </div>
+    </section>
+  );
 
-      <div class="section">
-        <h3>7. Safety & Interlock</h3>
-        <ul>
-          <li>Overload relay WAJIB aktif</li>
-          <li>Interlock contactor STAR–DELTA</li>
-          <li>LOTO sebelum servis</li>
-          <li>Jangan start motor tanpa beban dicek</li>
-        </ul>
+  const Footer = () => (
+    <footer className="bg-gray-900 text-white py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <h3 className="text-xl font-bold mb-4 flex items-center">
+              <span className="mr-2">⚓</span>
+              Maritime Learning Hub
+            </h3>
+            <p className="text-gray-400">
+              Platform pembelajaran terintegrasi untuk taruna POLTEKPEL dan Universitas Hang Tuah. 
+              Menggabungkan teori dan praktik sistem permesinan kapal.
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="text-xl font-bold mb-4">Navigasi Cepat</h3>
+            <ul className="space-y-2">
+              {[
+                { id: 'home', label: 'Beranda' },
+                { id: 'poltekpel-semester1', label: 'POLTEKPEL Semester 1' },
+                { id: 'semester3-teknika', label: 'Semester 3 TEKNIKA' },
+                { id: 'semester3-eto', label: 'Semester 3 ETO' },
+                { id: 'uht-electrical', label: 'UHT Electrical & Control' }
+              ].map((item) => (
+                <li key={item.id}>
+                  <button
+                    onClick={() => {
+                      setActiveSection(item.id);
+                      window.scrollTo(0, 0);
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-xl font-bold mb-4">Kontak</h3>
+            <ul className="space-y-2 text-gray-400">
+              <li className="flex items-start">
+                <span className="mr-2 mt-1">📧</span>
+                <span>rafael.sukirno@poltekpel-sby.ac.id</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 mt-1">🏫</span>
+                <span>POLTEKPEL Surabaya & Universitas Hang Tuah</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 mt-1">💡</span>
+                <span>Untuk pertanyaan materi kuliah, hubungi melalui email institusi</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="border-t border-gray-800 mt-8 pt-6 text-center text-gray-400">
+          <p>"Designed by Rafael Sukirno, CE & The Maritime Survival Teams"</p>
+          <p className="mt-1">© {new Date().getFullYear()} Maritime Learning Hub. All rights reserved.</p>
+        </div>
       </div>
+    </footer>
+  );
 
-      <div class="section">
-        <h3>8. Kesalahan Umum di Bengkel</h3>
-        <ul>
-          <li>Salah urutan phase → motor berputar terbalik</li>
-          <li>Overload disetel terlalu besar → motor gosong</li>
-          <li>Kontak bantu tidak dipasang → motor mati saat tombol dilepas</li>
-          <li>STAR & DELTA aktif bersamaan → short circuit</li>
-          <li>Kontrol dan daya disatukan → bahaya fatal</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- IMAGE MODAL -->
-  <div id="imageModal" class="image-modal">
-    <span class="close-btn" style="color:white;font-size:2rem;position:absolute;top:1rem;right:1rem;cursor:pointer;" onclick="closeImageModal()">&times;</span>
-    <div class="image-modal-content">
-      <img id="modalImage" src="" alt="">
-    </div>
-    <div class="image-caption" id="modalCaption"></div>
-    <div class="image-source" id="modalSource"></div>
-  </div>
-
-  <!-- FOOTER -->
-  <footer>
-    <div class="container">
-      <p>Ravindo Learning System (RLS)</p>
-      <p>Channel WhatsApp: KOMUNITAS PELAUT</p>
-      <p>“Belajar sistem, bukan hafalan”</p>
-      <p style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;">
-        Website ini dibuat oleh RLS Ravindo Learning System by Rafael Sukirno, CE
-      </p>
-    </div>
-  </footer>
-
-  <script>
-    // MODAL FUNCTIONS
-    function openModal(modalId) {
-      document.getElementById(modalId).style.display = 'block';
-    }
-
-    function closeModal(modalId) {
-      document.getElementById(modalId).style.display = 'none';
-    }
-
-    // IMAGE MODAL
-    function openImageModal(src, caption, description, sourceUrl) {
-      const modal = document.getElementById('imageModal');
-      const img = document.getElementById('modalImage');
-      const cap = document.getElementById('modalCaption');
-      const srcEl = document.getElementById('modalSource');
-
-      img.src = src;
-      img.alt = caption;
-      cap.innerHTML = `<strong>${caption}</strong><br>${description}`;
-      srcEl.innerHTML = `Sumber: <a href="${sourceUrl}" target="_blank" style="color:var(--accent);">${sourceUrl}</a>`;
-
-      modal.style.display = 'flex';
-    }
-
-    function closeImageModal() {
-      document.getElementById('imageModal').style.display = 'none';
-    }
-
-    // QUIZ LOGIC
-    let selectedAnswers = {};
-
-    function selectOption(element, optionId) {
-      // Remove selected class from siblings
-      const options = element.parentElement.querySelectorAll('.quiz-option');
-      options.forEach(opt => opt.classList.remove('selected'));
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navigation />
       
-      // Add selected class to clicked option
-      element.classList.add('selected');
+      <main className="flex-grow">
+        {activeSection === 'home' && <HomeSection />}
+        {activeSection === 'poltekpel-semester1' && <PoltekpelSemester1Section />}
+        {activeSection === 'semester3-teknika' && <Semester3TeknikaSection />}
+        {activeSection === 'semester3-eto' && (
+          <section className="py-16 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Semester 3 ETO</h1>
+              <p className="text-xl text-blue-700 mb-8">Automation Control & System Monitoring</p>
+              <div className="bg-white rounded-xl shadow-md p-8 max-w-4xl mx-auto">
+                <p className="text-gray-700 text-lg">
+                  Halaman ini berisi materi untuk Semester 3 ETO (Electro-Technical Officer) yang mencakup:
+                </p>
+                <ul className="mt-6 space-y-3 text-left">
+                  {[
+                    "Automation Control System",
+                    "PLC Basic for Ship Applications",
+                    "Sensor & Instrumentation",
+                    "Alarm & Monitoring System",
+                    "Bridge Control System",
+                    "Power Management System"
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-blue-600 text-xl mr-3 mt-1">•</span>
+                      <span className="text-gray-800 text-lg">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-8 text-gray-600 italic">
+                  Materi lengkap akan ditampilkan setelah pengembangan lebih lanjut. 
+                  Fokus pada integrasi sistem kontrol otomatis dan monitoring real-time di kapal modern.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+        {activeSection === 'uht-electrical' && <UhtElectricalControlSection />}
+        {activeSection === 'modul-praktik' && (
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Modul Praktik</h1>
+              <p className="text-xl text-blue-700 mb-12">Panduan Praktikum Bengkel Listrik Kapal</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                {[
+                  {
+                    title: "Panduan Praktikum",
+                    items: [
+                      "Step-by-step prosedur praktikum",
+                      "Checklist keselamatan kerja",
+                      "Format laporan praktikum",
+                      "Gambar diagram kelistrikan"
+                    ],
+                    icon: "📘"
+                  },
+                  {
+                    title: "Resource Pendukung",
+                    items: [
+                      "Video demo praktikum",
+                      "Simulasi troubleshooting",
+                      "Daftar tools dan equipment",
+                      "Studi kasus kegagalan sistem"
+                    ],
+                    icon: "🔧"
+                  }
+                ].map((category, index) => (
+                  <div key={index} className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+                    <div className="text-4xl mb-4">{category.icon}</div>
+                    <h2 className="text-xl font-bold text-blue-900 mb-4">{category.title}</h2>
+                    <ul className="space-y-3 text-left">
+                      {category.items.map((item, i) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-green-500 text-lg mr-2 mt-1">✓</span>
+                          <span className="text-gray-800">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-12 bg-gradient-to-r from-blue-600 to-cyan-700 rounded-xl p-8 max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold text-white mb-4">Contoh Modul: Perawatan Generator Kapal</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                  <div>
+                    <h3 className="font-bold text-lg text-blue-100 mb-2">Prosedur Praktikum:</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-blue-50">
+                      <li>Persiapan tools dan PPE</li>
+                      <li>Lock Out Tag Out (LOTO) prosedur</li>
+                      <li>Pemeriksaan bearing dan pelumasan</li>
+                      <li>Inspeksi AVR dan excitation system</li>
+                      <li>Testing insulation resistance</li>
+                      <li>Running test dan monitoring parameter</li>
+                    </ol>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-blue-100 mb-2">Checklist Safety:</h3>
+                    <ul className="space-y-2 text-blue-50">
+                      <li className="flex">
+                        <span className="text-yellow-200 mr-2">⚠️</span>
+                        <span>Verifikasi LOTO sebelum mulai kerja</span>
+                      </li>
+                      <li className="flex">
+                        <span className="text-yellow-200 mr-2">⚠️</span>
+                        <span>Gunakan insulated tools untuk pekerjaan listrik</span>
+                      </li>
+                      <li className="flex">
+                        <span className="text-yellow-200 mr-2">⚠️</span>
+                        <span>Pastikan area kerja kering dan bebas dari air</span>
+                      </li>
+                      <li className="flex">
+                        <span className="text-yellow-200 mr-2">⚠️</span>
+                        <span>Siapkan APAR di area kerja</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+        {activeSection === 'video' && (
+          <section className="py-16 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Video Pembelajaran</h1>
+              <p className="text-xl text-blue-700 mb-12">Materi Visual untuk Pemahaman Mendalam</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                {[
+                  { title: "Sistem Kemudi Kapal", duration: "18:24", thumbnail: "https://placehold.co/400x225/3b82f6/ffffff?text=Steering+Gear" },
+                  { title: "Troubleshooting Generator", duration: "22:17", thumbnail: "https://placehold.co/400x225/1e40af/ffffff?text=Generator+Repair" },
+                  { title: "Sensor & Instrumentasi", duration: "15:42", thumbnail: "https://placehold.co/400x225/0ea5e9/ffffff?text=Sensors" },
+                  { title: "PLC Dasar untuk Kapal", duration: "28:05", thumbnail: "https://placehold.co/400x225/0284c7/ffffff?text=PLC+Basics" },
+                  { title: "Safety Prosedur Listrik", duration: "12:38", thumbnail: "https://placehold.co/400x225/0369a1/ffffff?text=Electrical+Safety" },
+                  { title: "Power Management System", duration: "24:51", thumbnail: "https://placehold.co/400x225/075985/ffffff?text=PMS" }
+                ].map((video, index) => (
+                  <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="bg-gray-200 border-2 border-dashed rounded-t-xl h-48 flex items-center justify-center">
+                      <img 
+                        src={video.thumbnail} 
+                        alt={video.title} 
+                        className="w-full h-48 object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg text-gray-900 mb-2">{video.title}</h3>
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-600 font-medium">{video.duration}</span>
+                        <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center hover:bg-red-700 transition-colors">
+                          <span className="mr-1">▶</span> Putar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-12 bg-white rounded-xl shadow-md p-6 max-w-4xl mx-auto border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Petunjuk Penggunaan Video</h2>
+                <ul className="space-y-3 text-left">
+                  <li className="flex">
+                    <span className="text-blue-500 mr-3 mt-1">1.</span>
+                    <span>Tonton video sesuai urutan modul untuk pemahaman bertahap</span>
+                  </li>
+                  <li className="flex">
+                    <span className="text-blue-500 mr-3 mt-1">2.</span>
+                    <span>Gunakan fitur playback speed untuk menyesuaikan kecepatan pemutaran</span>
+                  </li>
+                  <li className="flex">
+                    <span className="text-blue-500 mr-3 mt-1">3.</span>
+                    <span>Video dapat diunduh untuk pembelajaran offline (tersedia di halaman Download)</span>
+                  </li>
+                  <li className="flex">
+                    <span className="text-blue-500 mr-3 mt-1">4.</span>
+                    <span>Lengkapi dengan membaca modul teori dan praktik yang relevan</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+        {activeSection === 'download' && (
+          <section className="py-16 bg-white">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Download Offline Package</h1>
+              <p className="text-xl text-blue-700 mb-8">Akses Materi Tanpa Koneksi Internet</p>
+              
+              <div className="bg-blue-50 rounded-xl p-8 border border-blue-200 mb-10">
+                <div className="text-5xl mb-4">📦</div>
+                <h2 className="text-2xl font-bold text-blue-900 mb-4">Paket Pembelajaran Lengkap</h2>
+                <p className="text-gray-700 mb-6">
+                  Unduh paket materi lengkap yang dapat diakses offline di laptop atau tablet Anda. 
+                  Cocok untuk pembelajaran di kapal atau area dengan koneksi terbatas.
+                </p>
+                
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-left mb-6">
+                  <h3 className="font-bold text-lg text-gray-900 mb-3">Isi Paket:</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2 mt-1">✓</span>
+                      <span>Semua modul teori dalam format HTML</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2 mt-1">✓</span>
+                      <span>Video pembelajaran (kualitas compressed)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2 mt-1">✓</span>
+                      <span>PDF modul praktikum dan checklist</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2 mt-1">✓</span>
+                      <span>Simulasi troubleshooting (versi offline)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2 mt-1">✓</span>
+                      <span>Panduan instalasi untuk offline access</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left mb-6">
+                  <p className="font-bold text-amber-900 mb-2">⚠️ Penting:</p>
+                  <p className="text-amber-800">
+                    Paket ini berukuran sekitar 2.5 GB. Pastikan Anda memiliki ruang penyimpanan yang cukup 
+                    dan koneksi internet yang stabil saat mengunduh.
+                  </p>
+                </div>
+                
+                <button className="px-8 py-4 bg-green-600 text-white rounded-xl text-lg font-bold hover:bg-green-700 transition-colors shadow-lg flex items-center mx-auto">
+                  <span className="mr-2 text-2xl">⬇️</span>
+                  Unduh Paket Lengkap (ZIP - 2.5 GB)
+                </button>
+                
+                <p className="mt-4 text-sm text-gray-500">
+                  Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Petunjuk Instalasi Offline</h2>
+                <ol className="space-y-3 text-left max-w-3xl mx-auto">
+                  <li className="flex">
+                    <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-3 mt-1">1</span>
+                    <span>Ekstrak file ZIP ke folder di komputer Anda</span>
+                  </li>
+                  <li className="flex">
+                    <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-3 mt-1">2</span>
+                    <span>Buka file "index.html" menggunakan browser (Chrome, Firefox, atau Edge)</span>
+                  </li>
+                  <li className="flex">
+                    <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-3 mt-1">3</span>
+                    <span>Semua materi dapat diakses melalui menu navigasi di website offline</span>
+                  </li>
+                  <li className="flex">
+                    <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center mr-3 mt-1">4</span>
+                    <span>Untuk update materi, unduh paket terbaru dari website online</span>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </section>
+        )}
+        {activeSection === 'about' && <AboutLecturerSection />}
+      </main>
       
-      // Store answer
-      const questionNum = optionId.slice(-1);
-      selectedAnswers[questionNum] = optionId;
-    }
-
-    function submitQuiz() {
-      const correctAnswers = {
-        '1': 'B1',
-        '2': 'B2',
-        '3': 'C3',
-        '4': 'B4',
-        '5': 'B5'
-      };
-
-      let score = 0;
-      for (let q in correctAnswers) {
-        if (selectedAnswers[q] === correctAnswers[q]) {
-          score++;
-        }
-      }
-
-      const percentage = (score / 5) * 100;
-      let message = `Skor Anda: ${score}/5 (${percentage}%)<br>`;
-      
-      if (percentage >= 80) {
-        message += '<span style="color:var(--success);">Luar biasa! Anda siap jadi engineer kapal!</span>';
-      } else if (percentage >= 60) {
-        message += '<span style="color:orange;">Bagus! Pelajari lagi bagian yang kurang.</span>';
-      } else {
-        message += '<span style="color:red;">Perlu belajar lebih banyak. Ulangi modul ini!</span>';
-      }
-
-      document.getElementById('quizResult').innerHTML = message;
-      document.getElementById('quizResult').style.display = 'block';
-    }
-
-    // CLOSE MODALS ON ESCAPE KEY
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.modal').forEach(modal => {
-          modal.style.display = 'none';
-        });
-        closeImageModal();
-      }
-    });
-
-    // CLOSE MODALS ON CLICK OUTSIDE
-    window.onclick = function(event) {
-      if (event.target.classList.contains('modal')) {
-        event.target.style.display = 'none';
-      }
-      if (event.target.id === 'imageModal') {
-        closeImageModal();
-      }
-    };
-  </script>
-</body>
-</html>
-
+      <Footer />
+    </div>
+  );
+}
